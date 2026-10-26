@@ -1,6 +1,6 @@
 # Sugar Spell
 
-An original, candy-themed match-three game for iPhone Home Screens and desktop browsers. Twenty levels, striped and wrapped sweets, rainbow truffles, jelly, frosting, boosters, stars, sound, and device-local saves. No account, ads, purchases, lives, or timer.
+An original, candy-themed match-three game for iPhone Home Screens and desktop browsers. 10,000 levels, striped and wrapped sweets, rainbow truffles, jelly, frosting, boosters, stars, sound, and device-local saves. No account, ads, purchases, lives, or timer.
 
 [Play Sugar Spell](https://malak333.github.io/candycrush/) · [Source](https://github.com/malak333/candycrush) · [iPhone installation](docs/IPHONE.md)
 
@@ -16,6 +16,8 @@ The first visit needs a connection. Thereafter the installed app can play offlin
 ## Play
 
 Tap two neighboring candies, swipe one onto a neighbor, or use arrow keys and Enter. Match three to clear them. Invalid swaps cost no moves. Match four for a striped sweet, five in a straight line for a rainbow truffle, and an L or T for a wrapped sweet. Special sweets combine for larger effects. Finish the score and board goals within the move limit. Hints are free; boosters replenish for each level.
+
+The first 20 levels are hand-designed; levels 21–10,000 use reproducible generated layouts with capped difficulty, themed regions, jelly, and frosting. The journey renders only 50 levels at a time and supports direct level lookup. Earn up to 30,000 stars.
 
 ## Develop and verify
 

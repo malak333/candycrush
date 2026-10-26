@@ -3,6 +3,7 @@ import type { Page } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 import { createGame, findHint, getLevel, swap } from '../../src/game'
 import type { GameState } from '../../src/game'
+import { defaultProgress, STORAGE_KEY } from '../../src/lib/storage'
 
 async function readGame(page: Page): Promise<GameState> {
   return page.evaluate(() => {
@@ -11,7 +12,9 @@ async function readGame(page: Page): Promise<GameState> {
         const item = JSON.parse(localStorage.getItem(key) || 'null')
         if (item?.savedGame?.board) return item.savedGame
         if (item?.progress?.savedGame?.board) return item.progress.savedGame
-      } catch { /* Ignore unrelated storage. */ }
+      } catch {
+        /* Ignore unrelated storage. */
+      }
     }
     throw new Error('No saved game checkpoint found')
   })
@@ -28,24 +31,43 @@ async function makeMatch(page: Page) {
 }
 
 test.beforeEach(async ({ page }) => {
-  await page.addInitScript(raw => {
-    if (!localStorage.getItem('sugar-spell.progress.v1')) localStorage.setItem('sugar-spell.progress.v1', raw)
-  }, JSON.stringify({ version: 1, unlocked: 1, stars: {}, best: {}, sound: true, tutorialSeen: false, savedGame: createGame(1, 20261025) }))
+  await page.addInitScript(
+    (raw) => {
+      if (!localStorage.getItem('sugar-spell.progress.v1'))
+        localStorage.setItem('sugar-spell.progress.v1', raw)
+    },
+    JSON.stringify({
+      version: 1,
+      unlocked: 1,
+      stars: {},
+      best: {},
+      sound: true,
+      tutorialSeen: false,
+      savedGame: createGame(1, 20261025),
+    }),
+  )
   await page.goto('./')
   await expect(page.getByTestId('board')).toBeVisible()
 })
 
-test('play a legal match, persist progress and sound, and recover after reload', async ({ page }) => {
+test('play a legal match, persist progress and sound, and recover after reload', async ({
+  page,
+}) => {
   const errors: string[] = []
-  page.on('pageerror', error => errors.push(error.message))
-  const oldSound = await page.getByRole('button', { name: /Turn sound/ }).getAttribute('aria-pressed')
+  page.on('pageerror', (error) => errors.push(error.message))
+  const oldSound = await page
+    .getByRole('button', { name: /Turn sound/ })
+    .getAttribute('aria-pressed')
   await page.getByRole('button', { name: /Turn sound/ }).click()
   const before = await makeMatch(page)
   const after = await readGame(page)
   expect(after.movesLeft).toBe(before.movesLeft - 1)
   await page.reload()
   expect(await readGame(page)).toEqual(after)
-  await expect(page.getByRole('button', { name: /Turn sound/ })).toHaveAttribute('aria-pressed', oldSound === 'true' ? 'false' : 'true')
+  await expect(page.getByRole('button', { name: /Turn sound/ })).toHaveAttribute(
+    'aria-pressed',
+    oldSound === 'true' ? 'false' : 'true',
+  )
   expect(errors).toEqual([])
 })
 
@@ -68,7 +90,9 @@ test('hints and boosters work with finite inventory and no move cost', async ({ 
   await expect(page.locator('.cell.hinted')).toHaveCount(2)
   await page.getByRole('button', { name: /^Lollipop hammer/ }).click()
   await page.locator('[data-cell="0"]').click()
-  await expect.poll(async () => (await readGame(page)).boosters.hammer).toBe(before.boosters.hammer - 1)
+  await expect
+    .poll(async () => (await readGame(page)).boosters.hammer)
+    .toBe(before.boosters.hammer - 1)
   const hammered = await readGame(page)
   expect(hammered.movesLeft).toBe(before.movesLeft)
   if (hammered.status === 'playing') {
@@ -80,7 +104,9 @@ test('hints and boosters work with finite inventory and no move cost', async ({ 
   }
 })
 
-test('level journey locks future levels and dialogs support keyboard dismissal', async ({ page }) => {
+test('level journey locks future levels and dialogs support keyboard dismissal', async ({
+  page,
+}) => {
   await page.getByRole('button', { name: 'Explore the journey' }).click()
   await expect(page.getByRole('dialog')).toBeVisible()
   await expect(page.getByRole('button', { name: /^Level 2:/ })).toBeDisabled()
@@ -97,13 +123,23 @@ test('level journey locks future levels and dialogs support keyboard dismissal',
 test('winning unlocks the next level and preserves earned stars', async ({ page }) => {
   const game = await readGame(page)
   const fixture = { ...game, score: getLevel(game.levelId).targetScore - 10 }
-  await page.evaluate(next => {
+  await page.evaluate((next) => {
     for (const key of Object.keys(localStorage)) {
       try {
         const value = JSON.parse(localStorage.getItem(key) || 'null')
-        if (value?.savedGame?.board) { value.savedGame = next; localStorage.setItem(key, JSON.stringify(value)); break }
-        if (value?.progress?.savedGame?.board) { value.progress.savedGame = next; localStorage.setItem(key, JSON.stringify(value)); break }
-      } catch { /* Ignore unrelated storage. */ }
+        if (value?.savedGame?.board) {
+          value.savedGame = next
+          localStorage.setItem(key, JSON.stringify(value))
+          break
+        }
+        if (value?.progress?.savedGame?.board) {
+          value.progress.savedGame = next
+          localStorage.setItem(key, JSON.stringify(value))
+          break
+        }
+      } catch {
+        /* Ignore unrelated storage. */
+      }
     }
   }, fixture)
   await page.reload()
@@ -116,12 +152,16 @@ test('winning unlocks the next level and preserves earned stars', async ({ page 
 })
 
 test('app shell, progress and game survive an offline reload', async ({ page, context }) => {
-  const manifestURL = new URL((await page.locator('link[rel="manifest"]').getAttribute('href'))!, page.url());
-  const response = await page.request.get(manifestURL.href);
-  expect(response.ok()).toBe(true);
-  const manifest = await response.json();
-  expect(new URL(manifest.start_url, manifestURL).pathname).toBe(new URL(page.url()).pathname);
-  for (const icon of manifest.icons) expect((await page.request.get(new URL(icon.src, manifestURL).href)).ok()).toBe(true);
+  const manifestURL = new URL(
+    (await page.locator('link[rel="manifest"]').getAttribute('href'))!,
+    page.url(),
+  )
+  const response = await page.request.get(manifestURL.href)
+  expect(response.ok()).toBe(true)
+  const manifest = await response.json()
+  expect(new URL(manifest.start_url, manifestURL).pathname).toBe(new URL(page.url()).pathname)
+  for (const icon of manifest.icons)
+    expect((await page.request.get(new URL(icon.src, manifestURL).href)).ok()).toBe(true)
   await expect(page.getByText('Ready for offline play')).toBeVisible({ timeout: 20000 })
   await page.evaluate(() => navigator.serviceWorker.ready)
   const before = await readGame(page)
@@ -134,14 +174,18 @@ test('app shell, progress and game survive an offline reload', async ({ page, co
   await context.setOffline(false)
 })
 
-test('small iPhone and desktop layouts fit, with accessible game and install instructions', async ({ page }, testInfo) => {
-  await page.screenshot({ path: testInfo.outputPath('initial-layout.png'), fullPage: true });
+test('small iPhone and desktop layouts fit, with accessible game and install instructions', async ({
+  page,
+}, testInfo) => {
+  await page.screenshot({ path: testInfo.outputPath('initial-layout.png'), fullPage: true })
   for (const width of [320, 390, 768, 1365]) {
     await page.setViewportSize({ width, height: 900 })
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
     await expect(page.locator('.cell')).toHaveCount(64)
   }
-  const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()
+  const results = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
+    .analyze()
   expect(results.violations).toEqual([])
   await page.getByRole('button', { name: /Take a little sweet/ }).click()
   await expect(page.getByRole('dialog')).toContainText('Add to Home Screen')
@@ -153,14 +197,17 @@ test('keyboard selects neighboring sweets and arrows move focus', async ({ page 
   const [a, b] = findHint(game)!
   await page.locator(`[data-cell="${a}"]`).focus()
   await page.keyboard.press('Enter')
-  const key = b === a + 1 ? 'ArrowRight' : b === a - 1 ? 'ArrowLeft' : b > a ? 'ArrowDown' : 'ArrowUp'
+  const key =
+    b === a + 1 ? 'ArrowRight' : b === a - 1 ? 'ArrowLeft' : b > a ? 'ArrowDown' : 'ArrowUp'
   await page.keyboard.press(key)
   await expect(page.locator(`[data-cell="${b}"]`)).toBeFocused()
   await page.keyboard.press('Enter')
   await expect.poll(async () => (await readGame(page)).score).toBeGreaterThan(game.score)
 })
 
-test('a swipe swaps adjacent candies once without a follow-up click selecting another candy', async ({ page }) => {
+test('a swipe swaps adjacent candies once without a follow-up click selecting another candy', async ({
+  page,
+}) => {
   const before = await readGame(page)
   const [a, b] = findHint(before)!
   const from = await page.locator(`[data-cell="${a}"]`).boundingBox()
@@ -172,4 +219,73 @@ test('a swipe swaps adjacent candies once without a follow-up click selecting an
   await expect.poll(async () => (await readGame(page)).movesLeft).toBe(before.movesLeft - 1)
   await expect(page.getByTestId('board')).toHaveAttribute('aria-busy', 'false')
   await expect(page.locator('.cell.selected')).toHaveCount(0)
+})
+
+test('the 10,000-level journey is paged, searchable, and keeps locked levels locked', async ({
+  page,
+}) => {
+  await page.getByRole('button', { name: 'Explore the journey' }).click()
+  await expect(page.locator('.level-grid .level-tile')).toHaveCount(50)
+  await page.getByLabel('Find a level').fill('10000')
+  await page.getByRole('button', { name: 'Go', exact: true }).click()
+  await expect(page.getByRole('button', { name: /^Level 10000:/ })).toBeDisabled()
+  await expect(page.getByRole('button', { name: 'Next level page' })).toBeDisabled()
+  await expect(page.locator('.level-grid .level-tile')).toHaveCount(50)
+  await page.getByRole('button', { name: 'My level', exact: true }).click()
+  await expect(page.getByRole('button', { name: /^Level 1:/ })).toBeEnabled()
+  await expect(page.getByRole('button', { name: 'Previous level page' })).toBeDisabled()
+})
+
+test('level 9999 unlocks 10000, final progress resumes, and completion never creates level 10001', async ({
+  page,
+}) => {
+  const seed = createGame(1, 20261025)
+  async function seedFinal(id: number) {
+    const finalGame = {
+      ...seed,
+      levelId: id,
+      movesLeft: getLevel(id).moves,
+      score: getLevel(id).targetScore - 10,
+    }
+    await page.addInitScript(
+      ({ key, raw, marker }) => {
+        if (sessionStorage.getItem(marker)) return
+        localStorage.setItem(key, raw)
+        sessionStorage.setItem(marker, 'seeded')
+      },
+      {
+        key: STORAGE_KEY,
+        marker: `test-final-${id}`,
+        raw: JSON.stringify({
+          version: 1,
+          ...defaultProgress(),
+          unlocked: id,
+          savedGame: finalGame,
+        }),
+      },
+    )
+    await page.reload()
+    await expect(page.getByTestId('score')).toHaveText(finalGame.score.toLocaleString())
+  }
+  await seedFinal(9999)
+  await makeMatch(page)
+  await page.reload()
+  await expect(page.getByRole('heading', { name: 'Sweet success!' })).toBeVisible()
+  await page.getByRole('button', { name: 'Next sweet adventure' }).click()
+  expect((await readGame(page)).levelId).toBe(10000)
+  await page.reload()
+  expect((await readGame(page)).levelId).toBe(10000)
+  await seedFinal(10000)
+  await makeMatch(page)
+  await expect(page.getByRole('heading', { name: 'Sweet success!' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Play again', exact: true })).toBeVisible()
+  expect(
+    await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!).unlocked, STORAGE_KEY),
+  ).toBe(10000)
+  await page
+    .getByRole('dialog')
+    .getByRole('button', { name: 'Explore the journey', exact: true })
+    .click()
+  await expect(page.getByRole('button', { name: /^Level 10000:/ })).toBeEnabled()
+  await expect(page.getByRole('button', { name: /^Level 10001:/ })).toHaveCount(0)
 })

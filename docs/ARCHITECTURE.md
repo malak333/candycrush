@@ -23,8 +23,9 @@ Pages builds use `VITE_BASE_PATH=/<repository-name>/`. For a root custom domain,
 ```powershell
 $env:VITE_BASE_PATH = '/candycrush/'
 npm run build
-Remove-Item Env:VITE_BASE_PATH
 npm run preview
+# After stopping the preview:
+Remove-Item Env:VITE_BASE_PATH
 ```
 
 Visit the preview URL plus `/candycrush/`. Check icons, manifest, fonts, and worker. Build again without the variable before running the root-based browser suite.
@@ -34,3 +35,9 @@ Visit the preview URL plus `/candycrush/`. Check icons, manifest, fonts, and wor
 Revert a faulty source change and let the same workflow validate and redeploy to roll back. Existing app windows may keep their cached version until the update is accepted or all clients close. Browser storage isn't a backup. There are no accounts, telemetry, payments, or synchronization.
 
 Action pin provenance: [checkout v4.2.2](https://github.com/actions/checkout/releases/tag/v4.2.2), [setup-node v4.4.0](https://github.com/actions/setup-node/releases/tag/v4.4.0), [upload-artifact v4.6.2](https://github.com/actions/upload-artifact/releases/tag/v4.6.2), [upload-pages-artifact v3.0.1](https://github.com/actions/upload-pages-artifact/releases/tag/v3.0.1), [deploy-pages v4.0.5](https://github.com/actions/deploy-pages/releases/tag/v4.0.5).
+
+## Campaign scale
+
+The campaign has 10,000 sequential levels. The first 20 are curated. Later definitions are generated on demand from level ID, with deterministic jelly patterns, rotated outer frosting, bounded objectives and capped difficulty. A cache retains at most 128 definitions. The interior stays open to avoid isolated candy positions. The map renders 50 buttons per page and supports direct lookup. Saves retain version 1 compatibility and allow the complete 10,000-level progress maps within a bounded 1 MB input limit.
+
+Tests validate every definition and initialize every level once, plus run representative complete games. This verifies stable playable starts and state invariants; it does not establish that every random deal can be won within its move limit or that all generated levels have been hand-balanced. Retrying provides a fresh deal.
