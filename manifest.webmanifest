@@ -1,0 +1,18 @@
+{
+  "id": "./",
+  "name": "Sugar Spell — Match & Magic",
+  "short_name": "Sugar Spell",
+  "description": "A sweet little world of match-three puzzles. Play offline, at your own pace.",
+  "lang": "en",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#fff5ed",
+  "theme_color": "#fff5ed",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
